@@ -20,10 +20,20 @@
 
 #include <libyul/AST.h>
 #include <libyul/Scope.h>
+#include <libyul/backends/evm/SSACFGLiveness.h>
 #include <libyul/backends/evm/SSAControlFlowGraph.h>
 
 namespace solidity::yul
 {
+
+struct ControlFlow;
+
+struct ControlFlowLiveness{
+	explicit ControlFlowLiveness(ControlFlow const& _controlFlow);
+
+	std::unique_ptr<SSACFGLiveness> mainLiveness;
+	std::vector<std::unique_ptr<SSACFGLiveness>> functionLiveness;
+};
 
 struct ControlFlow
 {
@@ -39,14 +49,19 @@ struct ControlFlow
 		return nullptr;
 	}
 
-	std::string toDot() const
+	std::string toDot(ControlFlowLiveness const* _liveness=nullptr) const
 	{
 		std::ostringstream output;
 		output << "digraph SSACFG {\nnodesep=0.7;\ngraph[fontname=\"DejaVu Sans\"]\nnode[shape=box,fontname=\"DejaVu Sans\"];\n\n";
-		output << mainGraph->toDot(false);
-		size_t index = 1;
-		for (auto const& [function, functionGraph]: functionGraphMapping)
-			output << functionGraph->toDot(false, index++);
+		output << mainGraph->toDot(false, std::nullopt, _liveness ? _liveness->mainLiveness.get() : nullptr);
+
+		for (size_t index=0; index < functionGraphs.size(); ++index)
+			output << functionGraphs[index]->toDot(
+				false,
+				index+1,
+				_liveness ? _liveness->functionLiveness[index].get() : nullptr
+			);
+
 		output << "}\n";
 		return output.str();
 	}
