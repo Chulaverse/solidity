@@ -1,0 +1,20 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract SimpleMetaHumanRegistry {
+    struct MetaHuman {
+        string name;
+        string role;
+    }
+
+    mapping(address => MetaHuman) public metaHumans;
+
+    function registerMetaHuman(string memory _name, string memory _role) public {
+        metaHumans[msg.sender] = MetaHuman(_name, _role);
+    }
+
+    function getMetaHuman(address _addr) public view returns (string memory, string memory) {
+        MetaHuman memory metaHuman = metaHumans[_addr];
+        return (metaHuman.name, metaHuman.role);
+    }
+}
